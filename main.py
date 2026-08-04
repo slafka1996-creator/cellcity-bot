@@ -29,7 +29,7 @@ def callback():
 
     if data["type"]=="confirmation":
 
-        return "СТРОКА_ПОДТВЕРЖДЕНИЯ"
+        return "bb6a8d26"
 
 
 
