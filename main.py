@@ -9,7 +9,7 @@ import os
 from database import *
 
 app=Flask(__name__)
-
+init_db()
 
 TOKEN = os.getenv("VK_TOKEN")
 
