@@ -1,12 +1,12 @@
 from flask import Flask, request
 import vk_api
 import os
-import json
 
 from database import *
 from game import build, city_map
 from keyboard import main_keyboard
-
+from jobs import hire_job, city_workers
+from chat import send_chat_message, show_chat
 
 
 app = Flask(__name__)
@@ -15,9 +15,7 @@ app = Flask(__name__)
 init_db()
 
 
-TOKEN = os.getenv(
-    "VK_TOKEN"
-)
+TOKEN = os.getenv("VK_TOKEN")
 
 
 vk = vk_api.VkApi(
@@ -26,38 +24,27 @@ vk = vk_api.VkApi(
 
 
 
-# Вставь сюда строку,
-# которую дал VK Callback API
+CONFIRMATION = "ВСТАВЬ_СТРОКУ_ПОДТВЕРЖДЕНИЯ_ВК"
 
-CONFIRMATION = "bb6a8d26"
+
 
 
 
 def send_message(
         user_id,
-        text,
-        keyboard=None
+        text
 ):
 
-    params = {
-
-        "user_id": user_id,
-
-        "message": text,
-
-        "random_id": 0
-
-    }
-
-
-    if keyboard:
-
-        params["keyboard"] = keyboard
-
-
-
     vk.messages.send(
-        **params
+
+        user_id=user_id,
+
+        message=text,
+
+        keyboard=main_keyboard(),
+
+        random_id=0
+
     )
 
 
@@ -76,17 +63,12 @@ def callback():
 
 
 
-    # подтверждение сервера VK
-
     if data["type"] == "confirmation":
 
         return CONFIRMATION
 
 
 
-
-
-    # новое сообщение
 
     if data["type"] == "message_new":
 
@@ -111,7 +93,10 @@ def callback():
 
 
 
+        # ----------------
         # старт
+        # ----------------
+
 
         if text == "старт":
 
@@ -131,22 +116,27 @@ def callback():
 😊 Счастье: 50
 
 
-Строй свой город!
+Развивай город!
 
 """
 
 
 
+        # ----------------
         # город
-
-        elif (
-            text == "город"
-            or
-            text == "🏙 мой город"
-        ):
+        # ----------------
 
 
-            player = get_player(
+        elif text in [
+
+            "город",
+
+            "🏙 мой город"
+
+        ]:
+
+
+            city = get_player(
                 user_id
             )
 
@@ -156,20 +146,28 @@ def callback():
 🏙 Твой город
 
 
-💰 Монеты:
-{player[1]}
+💰 Деньги:
+{city[1]}
 
 
 👥 Жители:
-{player[2]}
+{city[2]}
 
 
 😊 Счастье:
-{player[3]}
+{city[3]}
 
 
-⭐ Уровень:
-{player[4]}
+❤️ Здоровье:
+{city[4]}
+
+
+🛡 Безопасность:
+{city[5]}
+
+
+⭐ Репутация:
+{city[6]}
 
 
 Карта:
@@ -181,55 +179,184 @@ def callback():
 
 
 
-        # дом
 
-        elif (
-            text == "дом"
-            or
-            text == "🏠 дом"
-        ):
+        # ----------------
+        # здания
+        # ----------------
+
+
+        elif text in [
+
+            "дом",
+
+            "🏠 дом"
+
+        ]:
 
 
             answer = build(
+
                 user_id,
+
                 "house"
+
             )
 
 
 
+        elif text in [
 
+            "завод",
 
-        # завод
+            "🏭 завод"
 
-        elif (
-            text == "завод"
-            or
-            text == "🏭 завод"
-        ):
+        ]:
 
 
             answer = build(
+
                 user_id,
+
                 "factory"
+
             )
 
 
 
+        elif text in [
 
+            "парк",
 
-        # парк
+            "🌳 парк"
 
-        elif (
-            text == "парк"
-            or
-            text == "🌳 парк"
-        ):
+        ]:
 
 
             answer = build(
+
                 user_id,
+
                 "park"
+
             )
+
+
+
+
+
+        # ----------------
+        # профессии
+        # ----------------
+
+
+        elif text == "работы":
+
+
+            answer = city_workers(
+                user_id
+            )
+
+
+
+        elif text == "гид":
+
+
+            answer = hire_job(
+
+                user_id,
+
+                "guide"
+
+            )
+
+
+
+        elif text == "страж":
+
+
+            answer = hire_job(
+
+                user_id,
+
+                "guard"
+
+            )
+
+
+
+        elif text == "санитар":
+
+
+            answer = hire_job(
+
+                user_id,
+
+                "medic"
+
+            )
+
+
+
+        elif text == "врач":
+
+
+            answer = hire_job(
+
+                user_id,
+
+                "doctor"
+
+            )
+
+
+
+        elif text == "радио":
+
+
+            answer = hire_job(
+
+                user_id,
+
+                "radio"
+
+            )
+
+
+
+
+
+        # ----------------
+        # чат
+        # ----------------
+
+
+        elif text.startswith("чат "):
+
+
+            msg = text.replace(
+
+                "чат ",
+
+                ""
+
+            )
+
+
+            answer = send_chat_message(
+
+                user_id,
+
+                msg
+
+            )
+
+
+
+
+        elif text == "чат":
+
+
+            answer = show_chat()
 
 
 
@@ -240,18 +367,35 @@ def callback():
 
             answer = """
 
-🏙 CellCity
+🏙 CellCity команды:
 
 
-Команды:
+🏙 город
 
-🏙 Мой город
 
-🏠 Дом
+🏠 дом
 
-🏭 Завод
+🏭 завод
 
-🌳 Парк
+🌳 парк
+
+
+👷 работы
+
+
+🧭 гид
+
+🛡 страж
+
+🚑 санитар
+
+🩺 врач
+
+📻 радио
+
+
+💬 чат
+
 
 """
 
@@ -261,9 +405,7 @@ def callback():
 
             user_id,
 
-            answer,
-
-            main_keyboard()
+            answer
 
         )
 
