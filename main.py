@@ -85,7 +85,25 @@ def callback():
 Нужно 100 монет.
 """
 
+elif text=="город":
 
+    player = get_player(user_id)
+
+    if not player:
+
+        create_player(user_id)
+        player = get_player(user_id)
+
+
+    answer = f"""
+🏙 Ваш город
+
+💰 Деньги: {player[1]}
+
+👥 Жители: {player[2]}
+
+🏠 Дома: {player[3]}
+"""
     else:
 
         money -= 100
@@ -108,6 +126,7 @@ def callback():
 👥 Жители: {people}
 🏠 Дома: {houses}
 """
+        
         else:
 
             answer="Напишите: старт"
