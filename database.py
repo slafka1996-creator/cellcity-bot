@@ -8,9 +8,8 @@ DATABASE = "cellcity.db"
 
 def connect():
 
-    return sqlite3.connect(
-        DATABASE
-    )
+    return sqlite3.connect(DATABASE)
+
 
 
 
@@ -21,7 +20,29 @@ def init_db():
     cur = db.cursor()
 
 
-    # Игроки и города
+
+    # Пользователи
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users(
+
+        id INTEGER PRIMARY KEY,
+
+        nickname TEXT DEFAULT 'Игрок',
+
+        role TEXT DEFAULT 'player',
+
+        organization_id INTEGER DEFAULT 0,
+
+        banned INTEGER DEFAULT 0
+
+    )
+    """)
+
+
+
+
+    # Города
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS players(
@@ -47,6 +68,45 @@ def init_db():
 
 
 
+
+    # Организации
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS organizations(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        name TEXT,
+
+        owner INTEGER,
+
+        level INTEGER DEFAULT 1
+
+    )
+    """)
+
+
+
+
+    # Участники организаций
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS organization_members(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        organization_id INTEGER,
+
+        user_id INTEGER,
+
+        rank TEXT DEFAULT 'worker'
+
+    )
+    """)
+
+
+
+
     # Здания
 
     cur.execute("""
@@ -67,40 +127,37 @@ def init_db():
 
 
 
-    # Профессии жителей
+
+    # Чаты
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS jobs(
+    CREATE TABLE IF NOT EXISTS messages(
 
-        player_id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        guides INTEGER DEFAULT 0,
+        user_id INTEGER,
 
-        guards INTEGER DEFAULT 0,
+        chat_type TEXT,
 
-        medics INTEGER DEFAULT 0,
+        organization_id INTEGER DEFAULT 0,
 
-        doctors INTEGER DEFAULT 0,
+        message TEXT,
 
-        radio INTEGER DEFAULT 0
+        created INTEGER
 
     )
     """)
 
 
 
-    # Общий чат
+    # Настройки админов
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS chat(
+    CREATE TABLE IF NOT EXISTS settings(
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT PRIMARY KEY,
 
-        user_id INTEGER,
-
-        message TEXT,
-
-        created INTEGER
+        value TEXT
 
     )
     """)
@@ -115,12 +172,13 @@ def init_db():
 
 
 
-# -----------------------
-# Игрок
-# -----------------------
+
+# ===================
+# Пользователи
+# ===================
 
 
-def create_player(user_id):
+def create_user(user_id):
 
     db = connect()
 
@@ -128,44 +186,12 @@ def create_player(user_id):
 
 
 
-    cur.execute(
-    """
-    INSERT OR IGNORE INTO players
+    cur.execute("""
+
+    INSERT OR IGNORE INTO users
 
     (
-    id,
-    money,
-    people,
-    happiness,
-    health,
-    safety,
-    reputation,
-    level
-    )
-
-    VALUES(?,?,?,?,?,?,?,?)
-
-    """,
-
-    (
-        user_id,
-        1000,
-        0,
-        50,
-        100,
-        50,
-        0,
-        1
-    ))
-
-
-
-    cur.execute(
-    """
-    INSERT OR IGNORE INTO jobs
-
-    (
-    player_id
+    id
     )
 
     VALUES(?)
@@ -177,7 +203,6 @@ def create_player(user_id):
     ))
 
 
-
     db.commit()
 
     db.close()
@@ -186,18 +211,18 @@ def create_player(user_id):
 
 
 
-def get_player(user_id):
+def get_user(user_id):
 
     db = connect()
 
     cur = db.cursor()
 
 
-    cur.execute(
-    """
+    cur.execute("""
+
     SELECT *
 
-    FROM players
+    FROM users
 
     WHERE id=?
 
@@ -221,23 +246,11 @@ def get_player(user_id):
 
 
 
-def update_player(
+def set_role(
 
     user_id,
 
-    money,
-
-    people,
-
-    happiness,
-
-    health,
-
-    safety,
-
-    reputation,
-
-    level
+    role
 
 ):
 
@@ -246,26 +259,11 @@ def update_player(
     cur = db.cursor()
 
 
-    cur.execute(
-    """
+    cur.execute("""
 
-    UPDATE players
+    UPDATE users
 
-    SET
-
-    money=?,
-
-    people=?,
-
-    happiness=?,
-
-    health=?,
-
-    safety=?,
-
-    reputation=?,
-
-    level=?
+    SET role=?
 
     WHERE id=?
 
@@ -273,134 +271,13 @@ def update_player(
 
     (
 
-    money,
-
-    people,
-
-    happiness,
-
-    health,
-
-    safety,
-
-    reputation,
-
-    level,
+    role,
 
     user_id
 
     ))
 
 
-
-    db.commit()
-
-    db.close()
-
-
-
-
-
-# -----------------------
-# Профессии
-# -----------------------
-
-
-def get_jobs(user_id):
-
-    db = connect()
-
-    cur = db.cursor()
-
-
-    cur.execute(
-    """
-
-    SELECT *
-
-    FROM jobs
-
-    WHERE player_id=?
-
-    """,
-
-    (
-        user_id,
-    ))
-
-
-    result = cur.fetchone()
-
-
-    db.close()
-
-
-    return result
-
-
-
-
-
-def update_jobs(
-
-    user_id,
-
-    guides,
-
-    guards,
-
-    medics,
-
-    doctors,
-
-    radio
-
-):
-
-    db = connect()
-
-    cur = db.cursor()
-
-
-    cur.execute(
-    """
-
-    UPDATE jobs
-
-    SET
-
-    guides=?,
-
-    guards=?,
-
-    medics=?,
-
-    doctors=?,
-
-    radio=?
-
-    WHERE player_id=?
-
-    """,
-
-    (
-
-    guides,
-
-    guards,
-
-    medics,
-
-    doctors,
-
-    radio,
-
-    user_id
-
-    ))
-
-
-
     db.commit()
 
     db.close()
@@ -410,136 +287,83 @@ def update_jobs(
 
 
 
-# -----------------------
-# Здания
-# -----------------------
+def is_admin(user_id):
+
+    user = get_user(user_id)
 
 
-def add_building(
+    if not user:
 
-    user_id,
-
-    x,
-
-    y,
-
-    building_type
-
-):
-
-    db = connect()
-
-    cur = db.cursor()
+        return False
 
 
-    cur.execute(
-    """
+    return user[2] in [
 
-    INSERT INTO buildings
+        "admin",
 
-    (
-    player_id,
-    x,
-    y,
-    type
-    )
+        "owner",
 
-    VALUES(?,?,?,?)
+        "moderator"
 
-    """,
+    ]
 
-    (
+
+
+
+
+
+# ===================
+# Чаты
+# ===================
+
+
+def add_message(
 
     user_id,
 
-    x,
+    chat_type,
 
-    y,
-
-    building_type
-
-    ))
-
-
-    db.commit()
-
-    db.close()
-
-
-
-
-
-def get_buildings(user_id):
-
-    db = connect()
-
-    cur = db.cursor()
-
-
-    cur.execute(
-    """
-
-    SELECT x,y,type
-
-    FROM buildings
-
-    WHERE player_id=?
-
-    """,
-
-    (
-        user_id,
-    ))
-
-
-    result = cur.fetchall()
-
-
-    db.close()
-
-
-    return result
-
-
-
-
-
-# -----------------------
-# Общий чат
-# -----------------------
-
-
-def add_chat_message(
-
-    user_id,
-
-    message
-
-):
-
-    db = connect()
-
-    cur = db.cursor()
-
-
-    cur.execute(
-    """
-
-    INSERT INTO chat
-
-    (
-    user_id,
     message,
+
+    organization_id=0
+
+):
+
+    db = connect()
+
+    cur = db.cursor()
+
+
+
+    cur.execute("""
+
+    INSERT INTO messages
+
+    (
+
+    user_id,
+
+    chat_type,
+
+    organization_id,
+
+    message,
+
     created
+
     )
 
-    VALUES(?,?,?)
+    VALUES(?,?,?,?,?)
 
     """,
 
     (
 
     user_id,
+
+    chat_type,
+
+    organization_id,
 
     message,
 
@@ -548,6 +372,7 @@ def add_chat_message(
     ))
 
 
+
     db.commit()
 
     db.close()
@@ -557,26 +382,50 @@ def add_chat_message(
 
 
 
-def get_chat():
+def get_messages(
+
+    chat_type,
+
+    organization_id=0
+
+):
 
     db = connect()
 
     cur = db.cursor()
 
 
-    cur.execute(
-    """
 
-    SELECT user_id,message
+    cur.execute("""
 
-    FROM chat
+    SELECT
+
+    user_id,
+
+    message
+
+    FROM messages
+
+    WHERE
+
+    chat_type=?
+
+    AND organization_id=?
 
     ORDER BY id DESC
 
-    LIMIT 10
+    LIMIT 20
 
-    """
-    )
+    """,
+
+    (
+
+    chat_type,
+
+    organization_id
+
+    ))
+
 
 
     result = cur.fetchall()
@@ -586,3 +435,94 @@ def get_chat():
 
 
     return result
+
+
+
+
+
+
+# ===================
+# Организации
+# ===================
+
+
+def create_organization(
+
+    name,
+
+    owner
+
+):
+
+    db = connect()
+
+    cur = db.cursor()
+
+
+    cur.execute("""
+
+    INSERT INTO organizations
+
+    (
+
+    name,
+
+    owner
+
+    )
+
+    VALUES(?,?)
+
+    """,
+
+    (
+
+    name,
+
+    owner
+
+    ))
+
+
+
+    org_id = cur.lastrowid
+
+
+
+    cur.execute("""
+
+    INSERT INTO organization_members
+
+    (
+
+    organization_id,
+
+    user_id,
+
+    rank
+
+    )
+
+    VALUES(?,?,?)
+
+    """,
+
+    (
+
+    org_id,
+
+    owner,
+
+    "director"
+
+    ))
+
+
+
+    db.commit()
+
+    db.close()
+
+
+
+    return org_id
