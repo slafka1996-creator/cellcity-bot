@@ -1,8 +1,12 @@
 import sqlite3
 
 
+DB = "cellcity.db"
+
+
 def connect():
-    return sqlite3.connect("cellcity.db")
+    return sqlite3.connect(DB)
+
 
 
 def init_db():
@@ -14,12 +18,9 @@ def init_db():
     CREATE TABLE IF NOT EXISTS players(
 
         id INTEGER PRIMARY KEY,
-
-        money INTEGER,
-
-        people INTEGER,
-
-        houses INTEGER
+        money INTEGER DEFAULT 1000,
+        people INTEGER DEFAULT 0,
+        houses INTEGER DEFAULT 0
 
     )
     """)
@@ -34,10 +35,11 @@ def create_player(user_id):
     db = connect()
     cur = db.cursor()
 
-
     cur.execute(
         """
         INSERT OR IGNORE INTO players
+        (id,money,people,houses)
+
         VALUES(?,?,?,?)
         """,
         (
@@ -47,7 +49,6 @@ def create_player(user_id):
             0
         )
     )
-
 
     db.commit()
     db.close()
@@ -59,7 +60,6 @@ def get_player(user_id):
     db = connect()
     cur = db.cursor()
 
-
     cur.execute(
         """
         SELECT *
@@ -69,26 +69,23 @@ def get_player(user_id):
         (user_id,)
     )
 
-
-    player = cur.fetchone()
-
+    result = cur.fetchone()
 
     db.close()
 
-    return player
+    return result
 
 
 
-def update_player(
-    user_id,
-    money,
-    people,
-    houses
+def update_city(
+        user_id,
+        money,
+        people,
+        houses
 ):
 
     db = connect()
     cur = db.cursor()
-
 
     cur.execute(
         """
@@ -108,7 +105,6 @@ def update_player(
             user_id
         )
     )
-
 
     db.commit()
     db.close()
