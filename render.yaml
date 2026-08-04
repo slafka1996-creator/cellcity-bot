@@ -1,9 +1,6 @@
 services:
-
   - type: web
-
     name: cellcity-bot
-
     runtime: python
 
     buildCommand: pip install -r requirements.txt
