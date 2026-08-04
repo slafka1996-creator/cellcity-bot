@@ -1,4 +1,5 @@
 import sqlite3
+import time
 
 
 DATABASE = "cellcity.db"
@@ -20,10 +21,9 @@ def init_db():
     cur = db.cursor()
 
 
-    # Игроки
+    # Игроки и города
 
     cur.execute("""
-
     CREATE TABLE IF NOT EXISTS players(
 
         id INTEGER PRIMARY KEY,
@@ -34,10 +34,15 @@ def init_db():
 
         happiness INTEGER DEFAULT 50,
 
+        health INTEGER DEFAULT 100,
+
+        safety INTEGER DEFAULT 50,
+
+        reputation INTEGER DEFAULT 0,
+
         level INTEGER DEFAULT 1
 
     )
-
     """)
 
 
@@ -45,7 +50,6 @@ def init_db():
     # Здания
 
     cur.execute("""
-
     CREATE TABLE IF NOT EXISTS buildings(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +63,46 @@ def init_db():
         type TEXT
 
     )
+    """)
 
+
+
+    # Профессии жителей
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS jobs(
+
+        player_id INTEGER PRIMARY KEY,
+
+        guides INTEGER DEFAULT 0,
+
+        guards INTEGER DEFAULT 0,
+
+        medics INTEGER DEFAULT 0,
+
+        doctors INTEGER DEFAULT 0,
+
+        radio INTEGER DEFAULT 0
+
+    )
+    """)
+
+
+
+    # Общий чат
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS chat(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER,
+
+        message TEXT,
+
+        created INTEGER
+
+    )
     """)
 
 
@@ -71,28 +114,36 @@ def init_db():
 
 
 
-def create_player(
-        user_id
-):
+
+# -----------------------
+# Игрок
+# -----------------------
+
+
+def create_player(user_id):
 
     db = connect()
 
     cur = db.cursor()
 
 
-    cur.execute("""
 
+    cur.execute(
+    """
     INSERT OR IGNORE INTO players
 
     (
-        id,
-        money,
-        people,
-        happiness,
-        level
+    id,
+    money,
+    people,
+    happiness,
+    health,
+    safety,
+    reputation,
+    level
     )
 
-    VALUES(?,?,?,?,?)
+    VALUES(?,?,?,?,?,?,?,?)
 
     """,
 
@@ -101,8 +152,30 @@ def create_player(
         1000,
         0,
         50,
+        100,
+        50,
+        0,
         1
     ))
+
+
+
+    cur.execute(
+    """
+    INSERT OR IGNORE INTO jobs
+
+    (
+    player_id
+    )
+
+    VALUES(?)
+
+    """,
+
+    (
+        user_id,
+    ))
+
 
 
     db.commit()
@@ -112,17 +185,16 @@ def create_player(
 
 
 
-def get_player(
-        user_id
-):
+
+def get_player(user_id):
 
     db = connect()
 
     cur = db.cursor()
 
 
-    cur.execute("""
-
+    cur.execute(
+    """
     SELECT *
 
     FROM players
@@ -148,17 +220,24 @@ def get_player(
 
 
 
+
 def update_player(
 
-        user_id,
+    user_id,
 
-        money,
+    money,
 
-        people,
+    people,
 
-        happiness,
+    happiness,
 
-        level
+    health,
+
+    safety,
+
+    reputation,
+
+    level
 
 ):
 
@@ -167,7 +246,8 @@ def update_player(
     cur = db.cursor()
 
 
-    cur.execute("""
+    cur.execute(
+    """
 
     UPDATE players
 
@@ -179,6 +259,12 @@ def update_player(
 
     happiness=?,
 
+    health=?,
+
+    safety=?,
+
+    reputation=?,
+
     level=?
 
     WHERE id=?
@@ -187,17 +273,24 @@ def update_player(
 
     (
 
-        money,
+    money,
 
-        people,
+    people,
 
-        happiness,
+    happiness,
 
-        level,
+    health,
 
-        user_id
+    safety,
+
+    reputation,
+
+    level,
+
+    user_id
 
     ))
+
 
 
     db.commit()
@@ -208,15 +301,59 @@ def update_player(
 
 
 
-def add_building(
+# -----------------------
+# Профессии
+# -----------------------
 
+
+def get_jobs(user_id):
+
+    db = connect()
+
+    cur = db.cursor()
+
+
+    cur.execute(
+    """
+
+    SELECT *
+
+    FROM jobs
+
+    WHERE player_id=?
+
+    """,
+
+    (
         user_id,
+    ))
 
-        x,
 
-        y,
+    result = cur.fetchone()
 
-        building_type
+
+    db.close()
+
+
+    return result
+
+
+
+
+
+def update_jobs(
+
+    user_id,
+
+    guides,
+
+    guards,
+
+    medics,
+
+    doctors,
+
+    radio
 
 ):
 
@@ -225,20 +362,86 @@ def add_building(
     cur = db.cursor()
 
 
-    cur.execute("""
+    cur.execute(
+    """
 
-    INSERT INTO buildings
+    UPDATE jobs
+
+    SET
+
+    guides=?,
+
+    guards=?,
+
+    medics=?,
+
+    doctors=?,
+
+    radio=?
+
+    WHERE player_id=?
+
+    """,
 
     (
 
-    player_id,
+    guides,
+
+    guards,
+
+    medics,
+
+    doctors,
+
+    radio,
+
+    user_id
+
+    ))
+
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+
+
+# -----------------------
+# Здания
+# -----------------------
+
+
+def add_building(
+
+    user_id,
 
     x,
 
     y,
 
-    type
+    building_type
 
+):
+
+    db = connect()
+
+    cur = db.cursor()
+
+
+    cur.execute(
+    """
+
+    INSERT INTO buildings
+
+    (
+    player_id,
+    x,
+    y,
+    type
     )
 
     VALUES(?,?,?,?)
@@ -247,16 +450,15 @@ def add_building(
 
     (
 
-        user_id,
+    user_id,
 
-        x,
+    x,
 
-        y,
+    y,
 
-        building_type
+    building_type
 
     ))
-
 
 
     db.commit()
@@ -267,26 +469,17 @@ def add_building(
 
 
 
-def get_buildings(
-
-        user_id
-
-):
+def get_buildings(user_id):
 
     db = connect()
 
     cur = db.cursor()
 
 
-    cur.execute("""
+    cur.execute(
+    """
 
-    SELECT
-
-    x,
-
-    y,
-
-    type
+    SELECT x,y,type
 
     FROM buildings
 
@@ -295,9 +488,7 @@ def get_buildings(
     """,
 
     (
-
         user_id,
-
     ))
 
 
@@ -313,13 +504,16 @@ def get_buildings(
 
 
 
-def building_exists(
+# -----------------------
+# Общий чат
+# -----------------------
 
-        user_id,
 
-        x,
+def add_chat_message(
 
-        y
+    user_id,
+
+    message
 
 ):
 
@@ -328,37 +522,67 @@ def building_exists(
     cur = db.cursor()
 
 
-    cur.execute("""
+    cur.execute(
+    """
 
-    SELECT id
+    INSERT INTO chat
 
-    FROM buildings
+    (
+    user_id,
+    message,
+    created
+    )
 
-    WHERE
-
-    player_id=?
-
-    AND x=?
-
-    AND y=?
+    VALUES(?,?,?)
 
     """,
 
     (
 
-        user_id,
+    user_id,
 
-        x,
+    message,
 
-        y
+    int(time.time())
 
     ))
 
 
-    result = cur.fetchone()
+    db.commit()
+
+    db.close()
+
+
+
+
+
+
+def get_chat():
+
+    db = connect()
+
+    cur = db.cursor()
+
+
+    cur.execute(
+    """
+
+    SELECT user_id,message
+
+    FROM chat
+
+    ORDER BY id DESC
+
+    LIMIT 10
+
+    """
+    )
+
+
+    result = cur.fetchall()
 
 
     db.close()
 
 
-    return result is not None
+    return result
