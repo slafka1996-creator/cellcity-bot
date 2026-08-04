@@ -42,13 +42,11 @@ def callback():
 
 
 
-        if text=="старт":
-
+               if text == "старт":
 
             create_player(user_id)
 
-
-            answer="""
+            answer = """
 🏙 Добро пожаловать в CellCity!
 
 Ваш город создан.
@@ -63,39 +61,66 @@ def callback():
 """
 
 
-        elif text=="дом":
+        elif text == "дом":
 
-    player = get_player(user_id)
+            player = get_player(user_id)
 
-    if not player:
-        create_player(user_id)
-        player = get_player(user_id)
+            if not player:
 
+                create_player(user_id)
 
-    money = player[1]
-    people = player[2]
-    houses = player[3]
+                player = get_player(user_id)
 
 
-    if money < 100:
+            money = player[1]
+            people = player[2]
+            houses = player[3]
 
-        answer = """
+
+            if money < 100:
+
+                answer = """
 ❌ Не хватает денег.
-
-Нужно 100 монет.
 """
 
-elif text=="город":
 
-    player = get_player(user_id)
+            else:
 
-    if not player:
-
-        create_player(user_id)
-        player = get_player(user_id)
+                money -= 100
+                people += 10
+                houses += 1
 
 
-    answer = f"""
+                update_player(
+                    user_id,
+                    money,
+                    people,
+                    houses
+                )
+
+
+                answer = f"""
+🏠 Дом построен!
+
+💰 Деньги: {money}
+👥 Жители: {people}
+🏠 Дома: {houses}
+"""
+
+
+        elif text == "город":
+
+            player = get_player(user_id)
+
+
+            if not player:
+
+                create_player(user_id)
+
+                player = get_player(user_id)
+
+
+            answer = f"""
 🏙 Ваш город
 
 💰 Деньги: {player[1]}
@@ -104,7 +129,11 @@ elif text=="город":
 
 🏠 Дома: {player[3]}
 """
-    else:
+
+
+        else:
+
+            answer = "Напишите: старт"else:
 
         money -= 100
         people += 10
