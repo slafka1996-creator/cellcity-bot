@@ -65,15 +65,49 @@ def callback():
 
         elif text=="дом":
 
+    player = get_player(user_id)
 
-            answer="""
-🏠 Вы построили дом!
+    if not player:
+        create_player(user_id)
+        player = get_player(user_id)
 
-+10 жителей
--100 монет
+
+    money = player[1]
+    people = player[2]
+    houses = player[3]
+
+
+    if money < 100:
+
+        answer = """
+❌ Не хватает денег.
+
+Нужно 100 монет.
 """
 
 
+    else:
+
+        money -= 100
+        people += 10
+        houses += 1
+
+
+        update_player(
+            user_id,
+            money,
+            people,
+            houses
+        )
+
+
+        answer = f"""
+🏠 Дом построен!
+
+💰 Деньги: {money}
+👥 Жители: {people}
+🏠 Дома: {houses}
+"""
         else:
 
             answer="Напишите: старт"
