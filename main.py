@@ -4,6 +4,9 @@ import os
 import json
 
 from database import *
+from game import build, city_map
+from keyboard import main_keyboard
+
 
 
 app = Flask(__name__)
@@ -12,7 +15,9 @@ app = Flask(__name__)
 init_db()
 
 
-TOKEN = os.getenv("VK_TOKEN")
+TOKEN = os.getenv(
+    "VK_TOKEN"
+)
 
 
 vk = vk_api.VkApi(
@@ -21,177 +26,245 @@ vk = vk_api.VkApi(
 
 
 
+# Вставь сюда строку,
+# которую дал VK Callback API
+
 CONFIRMATION = "bb6a8d26"
 
 
 
-def send(user_id,text):
+def send_message(
+        user_id,
+        text,
+        keyboard=None
+):
+
+    params = {
+
+        "user_id": user_id,
+
+        "message": text,
+
+        "random_id": 0
+
+    }
+
+
+    if keyboard:
+
+        params["keyboard"] = keyboard
+
+
 
     vk.messages.send(
-        user_id=user_id,
-        message=text,
-        random_id=0
+        **params
     )
 
 
 
-@app.route("/", methods=["POST"])
+
+
+@app.route(
+    "/",
+    methods=["POST"]
+)
+
 def callback():
 
-    data=request.json
+
+    data = request.json
 
 
-    if data["type"]=="confirmation":
+
+    # подтверждение сервера VK
+
+    if data["type"] == "confirmation":
 
         return CONFIRMATION
 
 
 
-    if data["type"]=="message_new":
 
 
-        user_id = data["object"]["message"]["from_id"]
+    # новое сообщение
 
-        text = (
-            data["object"]
-            ["message"]
-            ["text"]
-            .lower()
+    if data["type"] == "message_new":
+
+
+        message = data["object"]["message"]
+
+
+        user_id = message["from_id"]
+
+
+        text = message["text"].lower()
+
+
+
+        create_player(
+            user_id
         )
 
 
 
-        if text=="старт":
+        answer = ""
 
 
-            create_player(user_id)
+
+        # старт
+
+        if text == "старт":
 
 
-            answer="""
+            answer = """
 
 🏙 Добро пожаловать в CellCity!
 
-Ваш город создан.
+
+Твой город создан.
+
 
 💰 Деньги: 1000
+
 👥 Жители: 0
 
-
-Команды:
-
-🏠 дом
-📊 город
-
-"""
+😊 Счастье: 50
 
 
-        elif text=="дом":
-
-
-            create_player(user_id)
-
-
-            city=get_player(user_id)
-
-
-            money=city[1]
-            people=city[2]
-            houses=city[3]
-
-
-
-            if money < 100:
-
-
-                answer="""
-
-❌ Недостаточно денег.
-
-Дом стоит 100 монет.
-
-"""
-
-
-            else:
-
-
-                money-=100
-                people+=10
-                houses+=1
-
-
-                update_city(
-                    user_id,
-                    money,
-                    people,
-                    houses
-                )
-
-
-                answer=f"""
-
-🏠 Новый дом построен!
-
-
-💰 Деньги: {money}
-
-👥 Жители: {people}
-
-🏠 Дома: {houses}
+Строй свой город!
 
 """
 
 
 
-        elif text=="город":
+        # город
+
+        elif (
+            text == "город"
+            or
+            text == "🏙 мой город"
+        ):
 
 
-            create_player(user_id)
-
-            city=get_player(user_id)
-
-
-
-            answer=f"""
-
-🏙 Ваш город
+            player = get_player(
+                user_id
+            )
 
 
-💰 Монеты: {city[1]}
+            answer = f"""
 
-👥 Жители: {city[2]}
+🏙 Твой город
 
-🏠 Дома: {city[3]}
+
+💰 Монеты:
+{player[1]}
+
+
+👥 Жители:
+{player[2]}
+
+
+😊 Счастье:
+{player[3]}
+
+
+⭐ Уровень:
+{player[4]}
 
 
 Карта:
 
-⬜⬜⬜⬜⬜
-⬜🏠⬜⬜⬜
-⬜⬜⬜⬜⬜
+{city_map(user_id)}
 
 """
+
+
+
+
+        # дом
+
+        elif (
+            text == "дом"
+            or
+            text == "🏠 дом"
+        ):
+
+
+            answer = build(
+                user_id,
+                "house"
+            )
+
+
+
+
+
+        # завод
+
+        elif (
+            text == "завод"
+            or
+            text == "🏭 завод"
+        ):
+
+
+            answer = build(
+                user_id,
+                "factory"
+            )
+
+
+
+
+
+        # парк
+
+        elif (
+            text == "парк"
+            or
+            text == "🌳 парк"
+        ):
+
+
+            answer = build(
+                user_id,
+                "park"
+            )
+
+
 
 
 
         else:
 
 
-            answer="""
+            answer = """
+
+🏙 CellCity
+
 
 Команды:
 
-старт
-дом
-город
+🏙 Мой город
+
+🏠 Дом
+
+🏭 Завод
+
+🌳 Парк
 
 """
 
 
 
-        send(
+        send_message(
+
             user_id,
-            answer
+
+            answer,
+
+            main_keyboard()
+
         )
 
 
@@ -200,9 +273,15 @@ def callback():
 
 
 
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
+
 
     app.run(
+
         host="0.0.0.0",
+
         port=10000
+
     )
