@@ -2,7 +2,11 @@ from flask import Flask,request
 import vk_api
 
 from database import *
+from flask import Flask, request
+import vk_api
+import os
 
+from database import *
 
 app=Flask(__name__)
 
