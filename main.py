@@ -2,11 +2,34 @@ from flask import Flask, request
 import vk_api
 import os
 
+
 from database import *
 from game import build, city_map
 from keyboard import main_keyboard
+
 from jobs import hire_job, city_workers
-from chat import send_chat_message, show_chat
+
+from admin import (
+    admin_menu,
+    show_players,
+    give_money,
+    change_role,
+    ban_player,
+    unban_player
+)
+
+from organizations import (
+    create_org,
+    join_org,
+    organization_info,
+    list_orgs
+)
+
+from chat import (
+    send_chat,
+    read_chat
+)
+
 
 
 app = Flask(__name__)
@@ -15,7 +38,10 @@ app = Flask(__name__)
 init_db()
 
 
-TOKEN = os.getenv("VK_TOKEN")
+
+TOKEN = os.getenv(
+    "VK_TOKEN"
+)
 
 
 vk = vk_api.VkApi(
@@ -24,8 +50,7 @@ vk = vk_api.VkApi(
 
 
 
-CONFIRMATION = "ВСТАВЬ_СТРОКУ_ПОДТВЕРЖДЕНИЯ_ВК"
-
+CONFIRMATION = "bb6a8d26"
 
 
 
@@ -51,6 +76,7 @@ def send_message(
 
 
 
+
 @app.route(
     "/",
     methods=["POST"]
@@ -59,49 +85,57 @@ def send_message(
 def callback():
 
 
-    data = request.json
+    data=request.json
 
 
 
-    if data["type"] == "confirmation":
+    if data["type"]=="confirmation":
 
         return CONFIRMATION
 
 
 
 
-    if data["type"] == "message_new":
+
+    if data["type"]=="message_new":
 
 
-        message = data["object"]["message"]
+        msg=data["object"]["message"]
 
 
-        user_id = message["from_id"]
+        user_id=msg["from_id"]
 
 
-        text = message["text"].lower()
+        text=msg["text"]
+
+
+        lower=text.lower()
 
 
 
-        create_player(
+        create_user(
             user_id
         )
 
 
-
-        answer = ""
-
+        answer=""
 
 
-        # ----------------
+
+        # =================
         # старт
-        # ----------------
+        # =================
 
 
-        if text == "старт":
+        if lower=="старт":
 
 
-            answer = """
+            create_player(
+                user_id
+            )
+
+
+            answer="""
 
 🏙 Добро пожаловать в CellCity!
 
@@ -109,68 +143,63 @@ def callback():
 Твой город создан.
 
 
-💰 Деньги: 1000
+Используй:
 
-👥 Жители: 0
+город
 
-😊 Счастье: 50
+дом
 
+работы
 
-Развивай город!
+чат
 
 """
 
 
 
-        # ----------------
+
+        # =================
         # город
-        # ----------------
+        # =================
 
 
-        elif text in [
-
-            "город",
-
-            "🏙 мой город"
-
-        ]:
+        elif lower=="город":
 
 
-            city = get_player(
+            player=get_player(
                 user_id
             )
 
 
-            answer = f"""
+            answer=f"""
 
 🏙 Твой город
 
 
 💰 Деньги:
-{city[1]}
+{player[1]}
 
 
 👥 Жители:
-{city[2]}
+{player[2]}
 
 
 😊 Счастье:
-{city[3]}
+{player[3]}
 
 
 ❤️ Здоровье:
-{city[4]}
+{player[4]}
 
 
 🛡 Безопасность:
-{city[5]}
+{player[5]}
 
 
 ⭐ Репутация:
-{city[6]}
+{player[6]}
 
 
-Карта:
 
 {city_map(user_id)}
 
@@ -180,183 +209,388 @@ def callback():
 
 
 
-        # ----------------
-        # здания
-        # ----------------
+        # =================
+        # строительство
+        # =================
 
 
-        elif text in [
-
-            "дом",
-
-            "🏠 дом"
-
-        ]:
+        elif lower=="дом":
 
 
-            answer = build(
-
+            answer=build(
                 user_id,
-
                 "house"
-
             )
 
 
 
-        elif text in [
-
-            "завод",
-
-            "🏭 завод"
-
-        ]:
+        elif lower=="завод":
 
 
-            answer = build(
-
+            answer=build(
                 user_id,
-
                 "factory"
-
             )
 
 
 
-        elif text in [
-
-            "парк",
-
-            "🌳 парк"
-
-        ]:
+        elif lower=="парк":
 
 
-            answer = build(
-
+            answer=build(
                 user_id,
-
                 "park"
-
             )
 
 
 
 
 
-        # ----------------
-        # профессии
-        # ----------------
+
+        # =================
+        # работы
+        # =================
 
 
-        elif text == "работы":
+        elif lower=="работы":
 
 
-            answer = city_workers(
+            answer=city_workers(
                 user_id
             )
 
 
 
-        elif text == "гид":
+        elif lower=="гид":
 
 
-            answer = hire_job(
-
+            answer=hire_job(
                 user_id,
-
                 "guide"
-
             )
 
 
+        elif lower=="страж":
 
-        elif text == "страж":
 
-
-            answer = hire_job(
-
+            answer=hire_job(
                 user_id,
-
                 "guard"
-
             )
 
 
+        elif lower=="санитар":
 
-        elif text == "санитар":
 
-
-            answer = hire_job(
-
+            answer=hire_job(
                 user_id,
-
                 "medic"
-
             )
 
 
+        elif lower=="врач":
 
-        elif text == "врач":
 
-
-            answer = hire_job(
-
+            answer=hire_job(
                 user_id,
-
                 "doctor"
-
             )
 
 
+        elif lower=="радио":
 
-        elif text == "радио":
 
-
-            answer = hire_job(
-
+            answer=hire_job(
                 user_id,
-
                 "radio"
-
             )
 
 
 
 
 
-        # ----------------
-        # чат
-        # ----------------
 
 
-        elif text.startswith("чат "):
+        # =================
+        # Организации
+        # =================
 
 
-            msg = text.replace(
+        elif lower.startswith(
+            "создать организацию "
+        ):
 
-                "чат ",
 
+            name=text.replace(
+                "создать организацию ",
                 ""
-
             )
 
 
-            answer = send_chat_message(
+            answer=create_org(
 
                 user_id,
 
-                msg
+                name
+
+            )
+
+
+
+        elif lower=="организации":
+
+
+            answer=list_orgs()
+
+
+
+        elif lower=="организация":
+
+
+            answer=organization_info(
+                user_id
+            )
+
+
+
+        elif lower.startswith(
+            "вступить "
+        ):
+
+
+            org_id=int(
+                lower.replace(
+                    "вступить ",
+                    ""
+                )
+            )
+
+
+            answer=join_org(
+
+                user_id,
+
+                org_id
 
             )
 
 
 
 
-        elif text == "чат":
 
 
-            answer = show_chat()
+
+        # =================
+        # Чаты
+        # =================
+
+
+        elif lower=="чат":
+
+
+            answer=read_chat(
+
+                user_id,
+
+                "global"
+
+            )
+
+
+
+        elif lower.startswith(
+            "чат "
+        ):
+
+
+            message=text[4:]
+
+
+            answer=send_chat(
+
+                user_id,
+
+                "global",
+
+                message
+
+            )
+
+
+
+
+
+        elif lower=="чат орг":
+
+
+            answer=read_chat(
+
+                user_id,
+
+                "organization"
+
+            )
+
+
+
+        elif lower.startswith(
+            "чат орг "
+        ):
+
+
+            message=text[8:]
+
+
+            answer=send_chat(
+
+                user_id,
+
+                "organization",
+
+                message
+
+            )
+
+
+
+
+        elif lower=="чат админ":
+
+
+            answer=read_chat(
+
+                user_id,
+
+                "admin"
+
+            )
+
+
+
+        elif lower.startswith(
+            "чат админ "
+        ):
+
+
+            message=text[10:]
+
+
+            answer=send_chat(
+
+                user_id,
+
+                "admin",
+
+                message
+
+            )
+
+
+
+
+
+
+
+        # =================
+        # Админка
+        # =================
+
+
+        elif lower=="админ":
+
+
+            answer=admin_menu(
+                user_id
+            )
+
+
+
+        elif lower=="игроки":
+
+
+            answer=show_players(
+                user_id
+            )
+
+
+
+        elif lower.startswith(
+            "выдать "
+        ):
+
+
+            data=lower.split()
+
+
+            answer=give_money(
+
+                user_id,
+
+                int(data[1]),
+
+                int(data[2])
+
+            )
+
+
+
+        elif lower.startswith(
+            "роль "
+        ):
+
+
+            data=lower.split()
+
+
+            answer=change_role(
+
+                user_id,
+
+                int(data[1]),
+
+                data[2]
+
+            )
+
+
+
+        elif lower.startswith(
+            "бан "
+        ):
+
+
+            answer=ban_player(
+
+                user_id,
+
+                int(
+                    lower.replace(
+                        "бан ",
+                        ""
+                    )
+                )
+
+            )
+
+
+
+        elif lower.startswith(
+            "разбан "
+        ):
+
+
+            answer=unban_player(
+
+                user_id,
+
+                int(
+                    lower.replace(
+                        "разбан ",
+                        ""
+                    )
+                )
+
+            )
 
 
 
@@ -365,37 +599,20 @@ def callback():
         else:
 
 
-            answer = """
+            answer="""
 
-🏙 CellCity команды:
-
-
-🏙 город
+Неизвестная команда.
 
 
-🏠 дом
+Напишите:
 
-🏭 завод
+старт
 
-🌳 парк
+город
 
+чат
 
-👷 работы
-
-
-🧭 гид
-
-🛡 страж
-
-🚑 санитар
-
-🩺 врач
-
-📻 радио
-
-
-💬 чат
-
+админ
 
 """
 
@@ -417,7 +634,7 @@ def callback():
 
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
 
 
     app.run(
