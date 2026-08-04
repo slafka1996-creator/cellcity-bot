@@ -7,7 +7,7 @@ from database import *
 app=Flask(__name__)
 
 
-TOKEN=os.getenv("VK_TOKEN")
+TOKEN = os.getenv("VK_TOKEN")
 
 
 vk=vk_api.VkApi(
